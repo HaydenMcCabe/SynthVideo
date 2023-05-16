@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "SynthVideo",
     platforms: [
-            .macOS(.v10_13),
+            .macOS(.v13),
             .iOS(.v16)
         ],
     products: [
