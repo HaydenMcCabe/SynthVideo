@@ -1,3 +1,3 @@
 # SynthVideo
 
-A description of this package.
+This package provides a method for viewing
