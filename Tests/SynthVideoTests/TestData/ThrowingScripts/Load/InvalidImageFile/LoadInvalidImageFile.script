@@ -1,0 +1,3 @@
+# Loading a file that can be found on the disk, but isn't a graphics
+# image throws an error.
+load:InvalidImageFile.png:0:0

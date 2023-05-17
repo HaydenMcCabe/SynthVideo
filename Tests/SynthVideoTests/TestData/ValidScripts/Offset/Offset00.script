@@ -1,0 +1,3 @@
+
+# The offset command generates a frame of video (i.e., it does not require a separate `pause` command) and takes two integer arguments
+offset:0:0

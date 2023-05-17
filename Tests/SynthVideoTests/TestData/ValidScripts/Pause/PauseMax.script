@@ -1,0 +1,4 @@
+
+# A value of 65,535 is the largest possible
+# pause value
+pause:65535

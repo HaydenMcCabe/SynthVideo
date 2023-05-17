@@ -1,0 +1,2 @@
+# Loading a missing file throws an error
+load:missing_file.png:0:0

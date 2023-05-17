@@ -1,0 +1,5 @@
+# This script fails because there is a colon following
+# the activeBlack command, which is interpreted as
+# arguments
+activeBlack:0
+pause:1

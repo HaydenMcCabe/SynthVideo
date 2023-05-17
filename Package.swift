@@ -27,6 +27,7 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "SynthVideoTests",
-            dependencies: ["SynthVideo"]),
+            dependencies: ["SynthVideo"],
+            resources: [.process("TestData")]),
     ]
 )
