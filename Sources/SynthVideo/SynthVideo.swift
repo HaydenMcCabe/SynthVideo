@@ -353,7 +353,7 @@ public struct SynthVideo {
                 
                 let tileSet = SynthVideo.tilesForFrame(in: imageTiles, x: xOffset, y: yOffset)
 
-                if tileSet.count > 255 {
+                if tileSet.count > 256 {
                     throw SynthVideoError.imageTooComplex
                 }
                 
@@ -393,7 +393,11 @@ public struct SynthVideo {
             default:
                 throw SynthVideoError.unknownCommand(lineNumber: lineNumber)
             }
-
+        }
+        
+        // Fail to initialize if there are no frames in the resulting video
+        if frames.count == 0 {
+            throw SynthVideoError.emptyVideo
         }
         
         self.timeline = timeline
