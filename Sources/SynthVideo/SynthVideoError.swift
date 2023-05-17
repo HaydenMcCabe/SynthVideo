@@ -27,6 +27,9 @@ public enum SynthVideoError : Error {
     case invalidPosition
     case invalidPixelRow
     
+    // Empty video when initializing from an empty script
+    case emptyVideo
+    
     // Script initialization errors
     case missingGraphicFile
     case incorrectImageDimensions
@@ -66,6 +69,8 @@ extension SynthVideoError: LocalizedError {
             return "Invalid position"
         case .invalidPixelRow:
             return "Invalid pixel row"
+        case .emptyVideo:
+            return "Resulting video has no frames"
         case .missingGraphicFile:
             return "Unable to find graphics file"
         case .incorrectImageDimensions:
