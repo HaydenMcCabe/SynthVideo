@@ -287,8 +287,12 @@ public struct SynthVideo {
             return URL(fileURLWithPath: directoryPath)
         }()
 
-        // The last image loaded from a file, represented as UInt8 arrays
-        var imageTiles = [[Tile]]()
+        // The last image loaded from a file, represented as UInt8 arrays. The default value is a blank 50x25 tile (400 x 300 pixel) screen
+        var imageTiles = {
+            let blankRow = Array(repeating: Tile.blank, count: 50)
+            return Array(repeating: blankRow, count: 25)
+        }()
+        
         // The last screen seen, defaulting to a blank screen
         
         var screen = Screen.blank
