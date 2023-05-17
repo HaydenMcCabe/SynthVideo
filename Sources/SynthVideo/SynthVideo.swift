@@ -366,7 +366,9 @@ public struct SynthVideo {
                 
             case "pause":
                 // The file format allows for 16-bit delay values
-                guard let delay = UInt16(components[1].trimmingCharacters(in: .whitespaces)) else {
+                guard components.count == 2,
+                      let delay = UInt16(components[1].trimmingCharacters(in: .whitespaces))
+                else {
                     throw SynthVideoError.badArguments(command: "pause", lineNumber: lineNumber)
                 }
                 guard delay > 0 else {
@@ -381,8 +383,10 @@ public struct SynthVideo {
                 }
                 
             case "offset":
-                guard let xOffset = Int(components[1].trimmingCharacters(in: .whitespaces)),
-                      let yOffset = Int(components[2].trimmingCharacters(in: .whitespaces)) else {
+                guard components.count == 3,
+                      let xOffset = Int(components[1].trimmingCharacters(in: .whitespaces)),
+                      let yOffset = Int(components[2].trimmingCharacters(in: .whitespaces))
+                else {
                     throw SynthVideoError.badArguments(command: "offset", lineNumber: lineNumber)
                 }
 
