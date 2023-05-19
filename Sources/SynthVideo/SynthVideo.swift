@@ -40,8 +40,7 @@ public struct SynthVideo {
     /// - Throws: `SynthVideoError.fileCorruption`
     /// when the file can not be interpreted as ROM data.
     public init(romData: Data) throws {
-        // Variables to build up the data for the SynthVideo struct
-        var timeline = [TimelineElement]()
+        // Create an array to store the screens as they are created.
         var frames = [Screen]()
 
         // Track what the current screen looks like
@@ -110,22 +109,12 @@ public struct SynthVideo {
                     guard word2 > 0 else {
                         throw SynthVideoError.invalidDelayValue
                     }
-                    // The range of frames will extend for the duration of the
-                    // delay. The delay includes the frame during which this
-                    // event is processed, so the additional delays are (word2 - 1)
-                    let range = frameNumber...(frameNumber+Int(delay)-1)
-                    timeline.append(.delay(delay: delay, range: range))
-                    
-                    // var framesForCurrentScreen = framesForScreen[currentScreen]!
-                    
+                                        
                     for _ in 0 ..< delay {
                         frames.append(currentScreen)
-                        //framesForCurrentScreen.append(frameNumber)
                         frameNumber += 1
                     }
-                    
-                    //framesForScreen[currentScreen] = framesForCurrentScreen
-                    
+                                        
                     romIndex += 2
                 } else {
                     // This is a frame update command, where
@@ -217,18 +206,14 @@ public struct SynthVideo {
                     }
                     
                     
-                    let range = frameNumber...frameNumber
                     currentScreen = Screen(tilePositions: screenTiles, xOffset: xOffset, yOffset: yOffset)
                     frames.append(currentScreen)
-                    timeline.append(.screen(screen: currentScreen, range: range))
-                    // framesForScreen[currentScreen] = [frameNumber]
                     
                     frameNumber += 1
                 }
             }
         }
         
-        self.timeline = timeline
         self.frames = frames
     }
     
@@ -315,8 +300,7 @@ public struct SynthVideo {
         
         var screen = Screen.blank
 
-        // A working copy of timeline and frames
-        var timeline = [TimelineElement]()
+        // A working copy of frames
         var frames = [Screen]()
         
         // The color that is currently used to determine if a pixel is on
@@ -387,7 +371,6 @@ public struct SynthVideo {
                 screen = Screen(tilePositions: tileSet, xOffset: UInt16(xOffset % vramPixelColumns), yOffset: UInt16(yOffset % vramPixelRows))
                 // `frames` has not yet been updated, so
                 // `frames.count` will be the index of this frame
-                timeline.append(TimelineElement.screen(screen: screen, range: frames.count...frames.count))
                 frames.append(screen)
                 
             case "pause":
@@ -407,9 +390,7 @@ public struct SynthVideo {
                     throw SynthVideoError.invalidDelayValue
                 }
                 
-                // Update the timeline with the existing
-                // screen for `delay` frames.
-                timeline.append(TimelineElement.delay(delay: delay, range: frames.count...(frames.count + Int(delay) - 1)))
+                // Add the screen to the frames array
                 for _ in 0 ..< delay {
                     frames.append(screen)
                 }
@@ -424,7 +405,6 @@ public struct SynthVideo {
 
                 let tileSet = SynthVideo.tilesForFrame(in: imageTiles, x: xOffset, y: yOffset)
                 screen = Screen(tilePositions: tileSet, xOffset: UInt16(xOffset % vramPixelColumns), yOffset: UInt16(yOffset % vramPixelRows))
-                timeline.append(TimelineElement.screen(screen: screen, range: frames.count...frames.count))
                 frames.append(screen)
             default:
                 throw SynthVideoError.unknownCommand(lineNumber: lineNumber)
@@ -436,17 +416,12 @@ public struct SynthVideo {
             throw SynthVideoError.emptyVideo
         }
         
-        self.timeline = timeline
         self.frames = frames
     }
     
-    // MARK: Private properties
-    private let timeline: [TimelineElement]
-    
-    
     // MARK: Public properties
     public func screenForFrame(_ frame: Int) -> Screen? {
-        guard timeline.count > 0, frame >= 0, frame < frames.count else {
+        guard frame >= 0, frame < frames.count else {
             return nil
         }
         
