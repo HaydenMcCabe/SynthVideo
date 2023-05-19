@@ -20,32 +20,33 @@ public struct SynthVideo {
     
     // MARK: Initializers
     
+    
     /// Initialize from the ROM data used in the synthesizer
     ///
-    /// - Parameter romData: The URL of a video ROM data file to load
+    /// - Parameter romFile: The URL of a video ROM data file to load
     ///
-    /// - Throws: `SynthVideoError.fileNotFound`
-    /// when the file can not be opened.
-    ///
-    /// `SynthVideoError.fileCorruption`
+    /// - Throws: `SynthVideoError.fileCorruption`
     /// when the file can not be interpreted as ROM data.
-    public init(romData: URL) throws {
+    ///
+    public init(romFile: URL) throws {
+        let romData = try Data(contentsOf: romFile)
+        try self.init(romData: romData)
+    }
+    
+    /// Initialize from the ROM data used in the synthesizer
+    ///
+    /// - Parameter romData: A Data instance containing the ROM
+    ///
+    /// - Throws: `SynthVideoError.fileCorruption`
+    /// when the file can not be interpreted as ROM data.
+    public init(romData: Data) throws {
         // Variables to build up the data for the SynthVideo struct
         var timeline = [TimelineElement]()
         var frames = [Screen]()
-        
+
         // Track what the current screen looks like
         // so it can be added to the `frames` array
         var currentScreen = Screen.blank
-        
-        // Ensure that the file can be opened
-        let rom = try {
-            do {
-                return try Data(contentsOf: romData)
-            } catch {
-                throw SynthVideoError.fileNotFound(filename: romData.absoluteString, lineNumber: 0)
-            }
-        }()
         
         // Set up memory structures to emulate the video hardware
         
@@ -75,7 +76,7 @@ public struct SynthVideo {
         
         // Create a scope where the unsafe bytes of the ROM data
         // are available.
-        try rom.withUnsafeBytes() {
+        try romData.withUnsafeBytes() {
             romPtr8 in
             // view the data as 16-bit unsigned Ints
             let romPtr16 = romPtr8.bindMemory(to: UInt16.self)
@@ -233,7 +234,7 @@ public struct SynthVideo {
     
     /// Initialize from a script file.
     ///
-    /// - Parameter scriptfile: The URL of a video script file. All
+    /// - Parameter script: The URL of a video script file. All
     /// file references in the script will be interpreted in reference to the
     /// enclosing folder of the script file.
     ///
@@ -251,30 +252,47 @@ public struct SynthVideo {
     /// `SynthVideoError.invalidDelayValue`
     ///
     /// `SynthVideoError.unknownCommand`
+    public init(script: URL) throws {
+        let scriptString = try String(contentsOf: script)
+        let directoryPath = script.pathComponents.dropLast(1).joined(separator: "/")
+        let workingDirectory = URL(filePath: directoryPath)
+        try self.init(script: scriptString, workingDirectory: workingDirectory)
+    }
+    
+    /// Initialize from a script in String format.
     ///
-    public init(script scriptFile: URL) throws {
+    /// - Parameter script: A string containing a video initialization script
+    ///
+    /// - Parameter workingDirectory: The directory to use when finding the absolute URLs of relative URLs in the script
+    ///
+    /// - Throws: `SynthVideoError.fileNotFound`
+    ///
+    /// `SynthVideoError.permissionError`
+    ///
+    /// `SynthVideoError.badArguments`
+    ///
+    /// `SynthVideoError.unableToLoadImage`
+    ///
+    /// `SynthVideoError.imageTooComplex`
+    ///
+    /// `SynthVideoError.invalidDelayValue`
+    ///
+    /// `SynthVideoError.unknownCommand`
+    public init(script: String, workingDirectory: URL) throws {
         // Verify that the input file is readable
         // as UTF8 text, then break it into an
         // array of lines and filter out comments.
-        let script = try {
-            do {
-                let rawScript = try String(contentsOf: scriptFile)
-                let lines = rawScript.split(separator: "\n", omittingEmptySubsequences: false)
-                // Ignore the section of any line that follows the # character, then trim whitespace, but
-                return lines.map { line in
-                    return String(line.split(separator: "#", omittingEmptySubsequences: false)
-                        .first?.trimmingCharacters(in: .whitespaces) ?? "")
-                }
-            } catch {
-                throw SynthVideoError.fileNotFound(filename: scriptFile.absoluteString, lineNumber: 0)
+        let scriptLines = script.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line in
+                return String(line.split(separator: "#", omittingEmptySubsequences: false)
+                    .first?.trimmingCharacters(in: .whitespaces) ?? "")
             }
-        }()
-
-        // Get the URL of the directory containing the script, so
-        // other files can be loaded from their relative file path.
-        // Some safety checks that should never occur are performed.
+        
+        // Verify that the given working directory is
+        // indeed a directory and that the user has read
+        // permissions for it.
         let workingDirectory = try {
-            let directoryPath = scriptFile.pathComponents.dropLast(1).joined(separator: "/")
+            let directoryPath = workingDirectory.path()
             // Check that the path is indeed a directory
             var isDirectory = ObjCBool(false)
             let exists = FileManager.default.fileExists(atPath: directoryPath, isDirectory: &isDirectory)
@@ -306,7 +324,7 @@ public struct SynthVideo {
         // script commands
         var activeBlack = true
                 
-        for (lineNumber, line) in script.enumerated() {
+        for (lineNumber, line) in scriptLines.enumerated() {
             // Get the actual line of the text file
             // being considered in case an error is thrown.
             let lineNumber = lineNumber + 1
