@@ -1,0 +1,8 @@
+
+# This script tests that the ActiveBlack command works
+# after setting ActiveWhite and that loading an all white
+# image returns a SynthVideo with all of the pixels on screen
+# deactivated.
+ActiveWhite
+ActiveBlack
+load:WhiteScreen.png:0:0

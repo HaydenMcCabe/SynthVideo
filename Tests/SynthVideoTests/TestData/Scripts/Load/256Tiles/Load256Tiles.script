@@ -1,4 +1,4 @@
 # This script will load an image with 256 unique 8x12 pixel tiles, the
 # maximum number allowed for any screen.
-load:256_tiles.png:0:0
+load:256Tiles.png:0:0
 
