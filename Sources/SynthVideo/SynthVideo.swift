@@ -392,10 +392,16 @@ public struct SynthVideo {
                 
             case "pause":
                 // The file format allows for 16-bit delay values
+                let trimmedArgument = components[1].trimmingCharacters(in: .whitespaces)
                 guard components.count == 2,
-                      let delay = UInt16(components[1].trimmingCharacters(in: .whitespaces))
+                      let delay = UInt16(trimmedArgument)
                 else {
-                    throw SynthVideoError.badArguments(command: "pause", lineNumber: lineNumber)
+                    // See if the argument can be interpreted as a numeric value
+                    if trimmedArgument.trimmingCharacters(in: .decimalDigits).count == 0 {
+                        throw SynthVideoError.invalidDelayValue
+                    } else {
+                        throw SynthVideoError.badArguments(command: "pause", lineNumber: lineNumber)
+                    }
                 }
                 guard delay > 0 else {
                     throw SynthVideoError.invalidDelayValue
