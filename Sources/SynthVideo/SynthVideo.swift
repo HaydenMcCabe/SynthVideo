@@ -11,15 +11,15 @@ import CoreImage
 import Foundation
 
 public struct SynthVideo {
-    // MARK: Public types
+    // MARK: Public properties
     public let frames: [Screen]
     
+    // MARK: Private properties
     private let bitmapCache = NSCache<Screen, CGImage>()
     
     private var framesForScreen: [Screen : [Int]] = [Screen.blank : []]
     
     // MARK: Initializers
-    
     
     /// Initialize from the ROM data used in the synthesizer
     ///
@@ -205,7 +205,6 @@ public struct SynthVideo {
                         }
                     }
                     
-                    
                     currentScreen = Screen(tilePositions: screenTiles, xOffset: xOffset, yOffset: yOffset)
                     frames.append(currentScreen)
                     
@@ -297,7 +296,6 @@ public struct SynthVideo {
         }()
         
         // The last screen seen, defaulting to a blank screen
-        
         var screen = Screen.blank
 
         // A working copy of frames
@@ -527,7 +525,6 @@ public struct SynthVideo {
         // If there is an existing file at the output URL, delete it
         do {
             if FileManager.default.fileExists(atPath: url.relativePath) {
-            //if try url.checkPromisedItemIsReachable() {
                     try FileManager.default.removeItem(at: url)
             }
         } catch {
@@ -629,7 +626,6 @@ public struct SynthVideo {
             
             let frameTime = CMTimeMake(value: Int64(frameNumber), timescale: Int32(30))
             // Find the cgImage for this frame
-            //let cgImage = imageForFrame(frameNumber)!
             context.draw(image, in: rect)
             context.flush()
             
