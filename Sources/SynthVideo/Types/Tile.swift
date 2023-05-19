@@ -45,8 +45,15 @@ public struct Tile: Equatable, Comparable, Hashable {
         return pixels[row]
     }
     
+    /// A tile with no active pixels.
     static var blank: Tile {
         let blankTile = Array<UInt8>(repeating: 0, count: 12)
         return try! Tile(pixels: blankTile)
+    }
+    
+    static var full: Tile {
+        let fullTile = Array<UInt8>(repeating: 255, count: 12)
+        return try! Tile(pixels: fullTile)
+
     }
 }
