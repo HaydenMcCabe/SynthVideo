@@ -369,7 +369,11 @@ public struct SynthVideo {
 
                         return try SynthVideo.loadImage(url: imageURL, activeBlack: activeBlack)
                     } catch {
-                        throw SynthVideoError.unableToLoadImage(fileName: filename, lineNumber: lineNumber)
+                        if case SynthVideoError.incorrectImageDimensions = error {
+                            throw SynthVideoError.incorrectImageDimensions
+                        } else {
+                            throw SynthVideoError.unableToLoadImage(fileName: filename, lineNumber: lineNumber)
+                        }
                     }
                 }()
                 
