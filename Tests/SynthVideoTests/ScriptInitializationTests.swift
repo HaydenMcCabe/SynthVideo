@@ -5,6 +5,8 @@ import XCTest
 /// the various commands used in those scripts
 final class ScriptInitializationTests: XCTestCase {
     
+    // MARK: Empty files
+    
     func testEmptyFile() throws {
         guard let scriptURL = Bundle.module.url(forResource: "EmptyFile", withExtension: "script") else {
             XCTFail("Missing required test file \"EmptyFile.script\"")
@@ -44,9 +46,8 @@ final class ScriptInitializationTests: XCTestCase {
         }
     }
     
-    /*
-     ActiveBlack
-     */
+    // MARK: ActiveBlack
+    
     func testActiveBlack() throws {
         guard let scriptURL = Bundle.module.url(forResource: "ActiveBlack", withExtension: "script") else {
             XCTFail("Missing required test file \"ActiveBlack.script\"")
@@ -96,9 +97,8 @@ final class ScriptInitializationTests: XCTestCase {
         }
     }
     
-    /*
-     ActiveWhite
-     */
+    // MARK: ActiveWhite
+    
     func testActiveWhite() throws {
         guard let scriptURL = Bundle.module.url(forResource: "ActiveWhite", withExtension: "script") else {
             XCTFail("Missing required test file \"ActiveWhite.script\"")
@@ -132,7 +132,7 @@ final class ScriptInitializationTests: XCTestCase {
         XCTAssert(video.frames[0].yOffset == 0)
     }
     
-    // The ActiveBlack command does not take any arguments,
+    // The ActiveWhite command does not take any arguments,
     // so their presence throws an error.
     func testActiveWhiteArguments() throws {
         guard let scriptURL = Bundle.module.url(forResource: "ActiveWhiteArguments", withExtension: "script") else {
@@ -147,9 +147,7 @@ final class ScriptInitializationTests: XCTestCase {
         }
     }
     
-    /*
-     Load
-     */
+    // MARK: Load
     
     // Load an image which requires 256 unique tiles to display
     // and verify the resulting SynthVideo reflects that
@@ -245,9 +243,7 @@ final class ScriptInitializationTests: XCTestCase {
         }
     }
 
-    /*
-     Offset
-     */
+    // MARK: Offset
     
     // Verify that a script containing just an offset:0:0
     // command returns a 1-frame video at 0,0
@@ -278,9 +274,7 @@ final class ScriptInitializationTests: XCTestCase {
         }
     }
     
-    /*
-     Pause
-     */
+    // MARK: Pause
 
     // Verify that a script that contains just the command
     // pause:1 creates a 1 frame video displaying a blank
@@ -333,6 +327,19 @@ final class ScriptInitializationTests: XCTestCase {
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
             guard case SynthVideoError.invalidDelayValue = error else {
                 XCTFail("Returned error should be .invalidDelayValue")
+                return
+            }
+        }
+    }
+    
+    func testPauseBadArgument() throws {
+        guard let scriptURL = Bundle.module.url(forResource: "PauseBadArgument", withExtension: "script") else {
+            XCTFail("Missing required test file \"PauseBadArgument.script\"")
+            return
+        }
+        XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
+            guard case SynthVideoError.badArguments = error else {
+                XCTFail("Returned error should be .badArguments")
                 return
             }
         }
