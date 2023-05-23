@@ -47,16 +47,11 @@ final class ExportTests: XCTestCase {
             // + 256 * 16 bytes for library updates
             // + 255 * 4 bytes for tilemap updates
             // + 4 bytes for the 0xDEADBEEF footer
-            let expectedBytes = 8 + (256 + 16) + (255 + 4) + 4
-            print (expectedBytes)
-            print (data.count)
-            //XCTAssert(data.count == expectedBytes)
+            let expectedBytes = 8 + (256 * 16) + (255 * 4) + 4
+            XCTAssert(data.count == expectedBytes)
         }
         
-        // Verify that the exported data can be used to initialize
-        // a new SynthVideo object
-        XCTAssertNoThrow({
-            let reconstructedVideo = try SynthVideo(synthvidData: data)
-        })
+        let restoredVideo = try SynthVideo(synthvidData: data)
+        XCTAssert(restoredVideo.frames.count == 1)
     }
 }
