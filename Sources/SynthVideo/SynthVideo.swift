@@ -17,8 +17,6 @@ public struct SynthVideo {
     // MARK: Private properties
     private let bitmapCache = NSCache<Screen, CGImage>()
     
-    private var framesForScreen: [Screen : [Int]] = [Screen.blank : []]
-    
     // MARK: Initializers
     
     /// Initialize from a file containing .synthvid data
