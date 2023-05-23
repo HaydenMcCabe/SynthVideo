@@ -12,7 +12,7 @@ final class ExportTests: XCTestCase {
     func testSynthvidExport() throws {
         // Get a temp directory to export a file to
         let tempDirectory = FileManager.default.temporaryDirectory
-        let exportedFileUrl = tempDirectory.appending(path: "testSynthvidExport.obv")
+        let exportedFileUrl = tempDirectory.appending(path: "testSynthvidExport.synthvid")
                 
         guard let scriptURL = Bundle.module.url(forResource: "Load256Tiles", withExtension: "script") else {
             XCTFail()
@@ -53,5 +53,10 @@ final class ExportTests: XCTestCase {
             //XCTAssert(data.count == expectedBytes)
         }
         
+        // Verify that the exported data can be used to initialize
+        // a new SynthVideo object
+        XCTAssertNoThrow({
+            let reconstructedVideo = try SynthVideo(synthvidData: data)
+        })
     }
 }
