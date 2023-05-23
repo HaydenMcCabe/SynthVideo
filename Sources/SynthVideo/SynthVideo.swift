@@ -21,25 +21,25 @@ public struct SynthVideo {
     
     // MARK: Initializers
     
-    /// Initialize from the ROM data used in the synthesizer
+    /// Initialize from a file containing .synthvid data
     ///
     /// - Parameter romFile: The URL of a video ROM data file to load
     ///
     /// - Throws: `SynthVideoError.fileCorruption`
     /// when the file can not be interpreted as ROM data.
     ///
-    public init(romFile: URL) throws {
-        let romData = try Data(contentsOf: romFile)
-        try self.init(romData: romData)
+    public init(synthvidFile: URL) throws {
+        let synthvidData = try Data(contentsOf: synthvidFile)
+        try self.init(synthvidData: synthvidData)
     }
     
-    /// Initialize from the ROM data used in the synthesizer
+    /// Initialize from the a file containing .synthvid data.
     ///
     /// - Parameter romData: A Data instance containing the ROM
     ///
     /// - Throws: `SynthVideoError.fileCorruption`
     /// when the file can not be interpreted as ROM data.
-    public init(romData: Data) throws {
+    public init(synthvidData: Data) throws {
         // Create an array to store the screens as they are created.
         var frames = [Screen]()
 
@@ -75,7 +75,7 @@ public struct SynthVideo {
         
         // Create a scope where the unsafe bytes of the ROM data
         // are available.
-        try romData.withUnsafeBytes() {
+        try synthvidData.withUnsafeBytes() {
             romPtr8 in
             // view the data as 16-bit unsigned Ints
             let romPtr16 = romPtr8.bindMemory(to: UInt16.self)
