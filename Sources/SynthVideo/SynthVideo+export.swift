@@ -18,10 +18,23 @@ fileprivate struct ScreenUpdate {
 }
 
 extension SynthVideo {
-    /// Export the current SynthVideo instance into a .dat file at the given URL
-    public func exportDat(url: URL) throws {
-        // Calculate the changes for each frame from the one that preceeded it.
-        // Assume the first frame is preceeded by a blank screen.
+    /// Export the video in .synthvid format to the provided URL.
+    /// The .synthvid file name extension IS NOT added to the URL.
+    /// - Parameter url: The URL to write the file to
+    /// - Parameter withoutOverwriting: If false, an existing file at the location will be overwritten. The default is false.
+    /// - Throws: `SynthVideoError.outputFileUnavailable` when, for any reason, the file write failed. This includes when a file is not overwritten because of the `withoutOverwriting` parameter was set.
+    public func exportSynthvid(url: URL, withoutOverwriting: Bool = false) throws {
+        do {
+            try synthvid.write(to: url, options: withoutOverwriting ? [.withoutOverwriting] : [])
+        } catch {
+            throw SynthVideoError.outputFileUnavailable
+        }
+    }
+    
+    /// Data of the video in .synthvid compressed format.
+    public var synthvid: Data {
+        // Calculate the changes for each frame from the one that preceded it.
+        // Assume the first frame is preceded by a blank screen.
         var screenUpdates = [ScreenUpdate?]()
         
         // Track the updates made to the tile map and tile library
@@ -199,9 +212,7 @@ extension SynthVideo {
                 screenUpdates.append(screenUpdate)
             }
         }
-        
-        print("Writing \(screenUpdates.count) frames to file")
-        
+                
         // Write the updates into the dat file format.
         var outputData = Data()
         
@@ -257,8 +268,7 @@ extension SynthVideo {
         outputData.appendUInt16(0xCAFE)
         
         // Write the data to file
-        try! outputData.write(to: url)
-        print("Done writing file!")
+        return outputData
     }
 
     /// Return a dictionary that maps each tile that appears in the video to its appearances.
