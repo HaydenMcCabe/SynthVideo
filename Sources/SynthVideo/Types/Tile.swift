@@ -21,8 +21,18 @@ public struct Tile: Equatable, Comparable, Hashable {
         return true
     }
     
+    /// The pixel data of the tile, represented as an array of UInt8 values.
+    /// Each UInt8 value represents a bitmask of pixels in a row, with the
+    /// MSB representing the left side. The first element of the array represents
+    /// the top line.
     let pixels: [UInt8]
     
+    /// Initialize a Tile from an array of UInt8 values. The initializer throws if the
+    /// count of the given array is not 12
+    /// - Parameter pixels: An array of UInt8 values representing the bitmask of
+    /// active pixels in the tile, with the first element of the array representing the top line
+    /// and so on.
+    /// - Throws: `SynthVideoError.invalidTileSize` when the count of the `pixels` array is not 12
     init(pixels: [UInt8]) throws {
         guard pixels.count == 12 else {
             throw SynthVideoError.invalidTileSize
@@ -32,10 +42,10 @@ public struct Tile: Equatable, Comparable, Hashable {
     
     /// Return a UInt8 value representing the pixels in a row of the tile.
     ///
-    /// - Parameter row: The row of pixels, in the range 0...7
+    /// - Parameter row: The row of pixels, in the range 0...11
     ///
     /// - Throws: `SynthVideoError.invalidPixelRow`
-    ///       The row argument is outside of the range 0...7
+    ///       When the row argument is outside of the range 0...11
     ///
     /// - Returns: A UInt8 value representing the pixels in a row of the tile.
     func pixelRow(_ row: Int) throws -> UInt8 {
@@ -51,9 +61,27 @@ public struct Tile: Equatable, Comparable, Hashable {
         return try! Tile(pixels: blankTile)
     }
     
+    /// A tile with all active pixels
     static var full: Tile {
         let fullTile = Array<UInt8>(repeating: 255, count: 12)
         return try! Tile(pixels: fullTile)
-
+    }
+    
+    /// A tile with randomly lit pixels.
+    static func random() -> Tile {
+        return try! Tile(pixels: [
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255),
+            UInt8.random(in: 0...255)
+        ])
     }
 }
