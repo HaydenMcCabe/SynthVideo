@@ -633,11 +633,8 @@ public struct SynthVideo {
             assetWriterAdaptor.append(pixelBuffer, withPresentationTime: frameTime)
         }
         
-        print("Writing file")
         assetWriterInput.markAsFinished()
-        assetWriter.finishWriting {
-            print("Finished writing video")
-        }
+        assetWriter.finishWriting {}
 
     }
     
