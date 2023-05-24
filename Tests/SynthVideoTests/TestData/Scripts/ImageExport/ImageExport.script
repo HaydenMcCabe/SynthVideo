@@ -1,0 +1,12 @@
+
+# This script uses many of the images used in the test cases to
+# create a video that will provide a moderate stress test.
+ActiveBlack
+load:WhiteScreen.png:0:0
+load:blackScreen.png:0:0
+load:256Tiles.png:0:0
+ActiveWhite
+load:whiteScreen.png:0:0
+load:blackScreen.png:0:0
+load:256Tiles.png:0:0
+
