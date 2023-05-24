@@ -38,6 +38,16 @@ final class TileTests: XCTestCase {
                 return
             }
         }
+        
+        // Send pixel arrays with too few and too many
+        // elements and verify that errors are thrown
+        for elementCount in 0 ..< 12 {
+            let smallArray = [UInt8](repeating: 0, count: elementCount)
+            XCTAssertThrowsError( _ = try Tile(pixels: smallArray))
+        }
+        
+        let largeArray = [UInt8](repeating: 0, count: 13)
+        XCTAssertThrowsError( _ = try Tile(pixels: largeArray))
     }
     
     func testFullTile() {
