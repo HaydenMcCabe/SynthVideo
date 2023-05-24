@@ -44,13 +44,13 @@ extension SynthVideo {
                 }
                 // Find the number of digits required to display the count of colors
                 let digitCount = "\(colors.count - 1)".count
-                return String(format: "_%0\(digitCount)d_", i)
+                return String(format: "_%0\(digitCount)d", i)
             }()
             
             for frameNumber in (0 ..< frames.count) {
                 let digitCount = "\(frames.count - 1)".count
                 let frameNumberString = String(format: "%0\(digitCount)d", frameNumber)
-                let filename = baseFilename + numericalPrefix + frameNumberString + ".png"
+                let filename = baseFilename + numericalPrefix + "_" + frameNumberString + ".png"
                 
                 let fileUrl = outputFolder.appending(path: filename)
                 
