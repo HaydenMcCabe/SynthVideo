@@ -65,10 +65,10 @@ All commands are sized so that they conform to 32-bit alignment.
 The reset command will clear the video memory and return to the first frame of the video.
 It is identified by the following little-endian, 16-bit, unsigned integers:
 
-`
+```
 0xBEEF
 0xCAFE
-`
+```
 
 ### `Pause`
 
@@ -76,10 +76,10 @@ The pause command takes an argument `n`, as a 16-bit unsigned integer, designati
 to be made for `n` frames.
 It has the following format, with the magic number and argument `N` both read as little-endian, 16-bit, unsigned integers.
 
-`
+```
 0xBABE
 N (UInt16)
-`
+```
 
 ### `Update`
 
@@ -90,23 +90,23 @@ describe the new data to be written into a tile library location, and the index 
 values describing the updates to be made to the tile map, with the row and column to be updated, and the new index
 value to be written.
 
-`
+```
 x-offset (UInt16)
 y-update (UInt16)
 L (UInt16)
 M (UInt 16)
 
-**Tile Library Updates (repeats L times)**
+// Tile Library Updates (repeats L times)
 Library index (UInt32)
 Tile rows 0-3 (UInt32)
 Tile rows 4-7 (UInt32)
 Tile rows 8-11 (UInt32)
 
-**Tile Map Updates (repeats M times)**
+// Tile Map Updates (repeats M times)
 Tile map row (UInt8)
 Tile map column (UInt8)
 New tile map index (UInt16)
-`
+```
 
 ## Usage
 
