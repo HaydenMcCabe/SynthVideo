@@ -87,5 +87,40 @@ final class TileTests: XCTestCase {
             XCTAssert(row == 0)
         }
     }
+    
+    func testTileOrdering() throws {
+        // Generate an array of random UInt8 values
+        let randomNumbers = {
+            var numbers = [UInt8]()
+            for _ in 1 ... 100 {
+                numbers.append(UInt8.random(in: 0 ... 255))
+            }
+            return numbers
+        }()
+        
+        let sortedNumbers = randomNumbers.sorted()
+        
+        for row in 0 ..< 12 {
+            var tiles = [Tile]()
+            let header = [UInt8](repeating: 0, count: row)
+            let footer = [UInt8](repeating: 0, count: 11 - row)
+            
+            // Generate tiles from the random data
+            for number in randomNumbers {
+                try tiles.append(Tile(pixels: header + [number] + footer))
+            }
+            
+            let sortedTiles = tiles.sorted()
+            
+            // Verify that the tiles are in the same order as
+            // the sorted numbers
+            let zipped = zip(sortedNumbers, sortedTiles)
+            
+            for (number, tile) in zipped {
+                let pixelRow = try tile.pixelRow(row)
+                XCTAssert(number == pixelRow)
+            }
+        }
+    }
 
 }

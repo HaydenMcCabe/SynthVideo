@@ -7,7 +7,9 @@
 
 import Foundation
 
-public enum SynthVideoError : Error {
+public enum SynthVideoError : Error, CaseIterable {
+    
+    
     // File errors
     case fileNotFound(filename: String, lineNumber: Int)
     case fileCorruption
@@ -42,6 +44,24 @@ public enum SynthVideoError : Error {
     
     // Frame function
     case invalidFrameNumber
+    
+    public static var allCases: [SynthVideoError] = [
+        .fileNotFound(filename: "test", lineNumber: 1),
+        .fileCorruption, .permissionError,
+        .outputFileUnavailable, .invalidRange, .notDirectory,
+        .invalidDelayValue, .videoInitializationError,
+        .invalidTileSize, .invalidPosition, .invalidPixelRow,
+        .emptyVideo,
+        .missingGraphicFile,
+        .incorrectImageDimensions,
+        .unknownCommand(lineNumber: 1),
+        .badArguments(command: "test", lineNumber: 1),
+        .unableToLoadImage(fileName: "test", lineNumber: 1),
+        .graphicConversionError,
+        .imageTooComplex,
+        .unsupportedCodec,
+        .invalidFrameNumber   
+    ]
 }
 
 extension SynthVideoError: LocalizedError {
