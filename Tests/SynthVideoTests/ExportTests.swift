@@ -19,7 +19,7 @@ final class ExportTests: XCTestCase {
             return
         }
         
-        var video = try SynthVideo(script: scriptURL)
+        let video = try SynthVideo(script: scriptURL)
 
         // Try exporting to the temp directory
         XCTAssertNoThrow(try video.exportSynthvid(url: exportedFileUrl))

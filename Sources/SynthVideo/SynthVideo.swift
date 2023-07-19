@@ -418,8 +418,10 @@ public class SynthVideo {
     
     // MARK: Public properties
     public struct MemoryState {
-        let tileMaps: Data
-        let tileLibraries: Data
+        let xOffset: UInt16
+        let yOffset: UInt16
+        let tileMap: Data
+        let tileLibrary: Data
     }
     
     private var _memoryStates: [MemoryState]? = nil
@@ -431,16 +433,138 @@ public class SynthVideo {
         var memoryStates = [MemoryState]()
         
         // Initialize data objects representing
-        // the
-        
-        // Create a synthvid representation
-        // and create pointers to the data.
-        synthvid.withUnsafeBytes { ptr8 in
-            
+        // the in-memory values. The values
+        // in these are saved to the memoryStates
+        // array for each frame.
+        let tileMapCount = vramTileColumns * vramTileRows
+        let tileMapRam = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: tileMapCount)
+        for i in 0 ..< tileMapRam.count {
+            tileMapRam[i] = 0
         }
         
+        let tileLibraryRam = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: 256*3)
+        for i in 0 ..< tileLibraryRam.count {
+            tileLibraryRam[i] = 0
+        }
         
-        //self._memoryStates = memoryStates
+        var xOffsetMemory: UInt16 = 0
+        var yOffsetMemory: UInt16 = 0
+                
+        // Create a synthvid representation
+        // and create pointers to the data.
+        synthvid.withUnsafeBytes { romPtr8 in
+            let romPtr16 = romPtr8.bindMemory(to: UInt16.self)
+            let romPtr32 = romPtr8.bindMemory(to: UInt32.self)
+            
+            var romIndex = 0
+            
+        romLoop: while romIndex < romPtr16.count {
+                // Parse the file to look for the next command
+                let word1 = romPtr16[romIndex]
+                let word2 = romPtr16[romIndex+1]
+                
+                if (word1 == 0xBEEF && word2 == 0xCAFE) {
+                    // The 0xBEEFCAFE command resets the animation system
+                    // and loops back to the beginning on real hardware. Here
+                    // it marks the point to stop making the video
+                    break romLoop
+                } else if (word1 == 0xBABE) {
+                    let delay = word2
+                    guard word2 > 0 else {
+                        // Corrupted data
+                        // Invalid delay value
+                        fatalError()
+                    }
+                    
+                                        
+                    let frameState = MemoryState(xOffset: xOffsetMemory,
+                                                 yOffset: yOffsetMemory,
+                                                 tileMap: Data(buffer: tileMapRam),
+                                                 tileLibrary: Data(buffer: tileLibraryRam))
+                    // Append the frame data
+                    // for each frame
+                    for _ in 0 ..< delay {
+                        memoryStates.append(frameState)
+                    }
+                                        
+                    romIndex += 2
+                } else {
+                    // This is a frame update command, where
+                    // word1 and word2 are the new xOffset and
+                    // yOffset, respectively.
+                    xOffsetMemory = word1
+                    yOffsetMemory = word2
+                    let lib_update_count = romPtr16[romIndex+2]
+                    let tile_update_count = romPtr16[romIndex+3]
+                    
+                    // Check that these values make sense, or throw
+                    // an error.
+                    guard xOffsetMemory < vramPixelColumns,
+                          yOffsetMemory < vramPixelRows,
+                          lib_update_count <= vramTilePositions,
+                          tile_update_count <= (vramTileColumns * vramTileRows) else {
+                        fatalError()
+                    }
+                    
+                    romIndex += 4
+                                        
+                    for _ in 0..<lib_update_count {
+                        // The index in the 32-bit pointer is half of that
+                        // in the 16-bit pointer. The 16-bit value should
+                        // be even, due to the alignment of the data format.
+                        let romIndex32 = romIndex / 2
+                        
+                        // The update data is read as 4 32-bit words. The first
+                        // is the library index to copy into, followed by the
+                        // 12 bytes of pixel data.
+                        let libraryIndex = romPtr32[romIndex32]
+                                                    
+                        // From the libraryIndex, find the actual index in the
+                        // allocated memory for a 32-bit pointer
+                        let libraryIndex32 = Int(libraryIndex * 3)
+                        
+                        // Copy the values as 32-bit words
+                        tileLibraryRam[libraryIndex32] = romPtr32[romIndex32 + 1]
+                        tileLibraryRam[libraryIndex32 + 1] = romPtr32[romIndex32 + 2]
+                        tileLibraryRam[libraryIndex32 + 2] = romPtr32[romIndex32 + 3]
+                        
+                        // Advance the index for 8 16-bit values after reading 4 32-bit values
+                        romIndex += 8
+                    }
+                    
+                    // Repeat to update the tile map
+                    for _ in 0 ..< tile_update_count {
+                        // The tile updates come as 16-bit pairs, with the
+                        // first value containting the coordinates, and
+                        // the second with the value
+                        let coordinates = romPtr16[romIndex]
+                        let row = Int(coordinates & 0xFF)
+                        let col = Int(coordinates >> 8)
+                        
+                        let index = row * vramTileColumns + col
+                        
+                        let value = UInt8(romPtr16[romIndex+1])
+                        tileMapRam[index] = value
+
+                        romIndex += 2
+                    }
+                    
+                    // Create a MemoryState to store the current contents
+                    // of the tilemap and tile library and offsets.
+                    let frameState = MemoryState(xOffset: xOffsetMemory,
+                                                 yOffset: yOffsetMemory,
+                                                 tileMap: Data(buffer: tileMapRam),
+                                                 tileLibrary: Data(buffer: tileLibraryRam))
+                    memoryStates.append(frameState)
+
+                    
+                }
+                
+            }
+            
+            
+        }
+                
         return memoryStates
     }()
     
