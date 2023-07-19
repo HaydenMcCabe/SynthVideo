@@ -17,6 +17,7 @@ public class SynthVideo {
     
     // MARK: Private properties
     private let bitmapCache = NSCache<Screen, CGImage>()
+    private var _synthVid: Data? = nil
     
     // MARK: Initializers
     
@@ -213,6 +214,9 @@ public class SynthVideo {
         }
         
         self.frames = frames
+        
+        // The data passed verification as valid synthVid data, so store it
+        _synthVid = synthvidData
     }
     
     /// Initialize from a script file.
@@ -943,243 +947,262 @@ public class SynthVideo {
     
     /// Data of the video in .synthvid compressed format.
     public lazy var synthvid: Data = {
-    // Calculate the changes for each frame from the one that preceded it.
-    // Assume the first frame is preceded by a blank screen.
-    var screenUpdates = [ScreenUpdate?]()
-    
-    // Track the updates made to the tile map and tile library
-    var tileMap = TileMap()
-    var tileLibrary = TileLibrary()
-    
-    // Analyze the entire video, to find when each unique tile appears.
-    var tileAppearances = self.tileAppearances
-    
-    // Track which tiles have made their final appearance, so that
-    // they can be safely removed from the tile library
-    var releasedTiles = Set<Tile>()
-    
-    for frameNumber in 0 ..< frames.count {
-                    
-        let previousScreen = (frameNumber == 0) ? Screen.blank : frames[frameNumber-1]
-        let currentScreen = frames[frameNumber]
-                    
-        // Store the pending writes in dictionaries, to prevent duplicates
-        // and ensure that only the last written value is used.
-        var tileMapWrites = [TileMapPosition : UInt8]()
-        var tileLibraryWrites = [UInt8 : Tile]()
+        // Return the value in memory, if available
+        if let cached = _synthVid {
+            return cached
+        }
         
-        // Create a list of tiles that are released after this screen
-        var upcomingReleases = [Tile]()
+        // Calculate the changes for each frame from the one that preceded it.
+        // Assume the first frame is preceded by a blank screen.
+        var screenUpdates = [ScreenUpdate?]()
         
-        // Consider each tile that will appear on screen, and their positions
-        for (tile, positions) in currentScreen.tilePositions {
-            // Sort the positions that will display this tile
-            // by what tile library index they currently have.
+        // Track the updates made to the tile map and tile library
+        var tileMap = TileMap()
+        var tileLibrary = TileLibrary()
+        
+        // Analyze the entire video, to find when each unique tile appears.
+        var tileAppearances = self.tileAppearances
+        
+        // Track which tiles have made their final appearance, so that
+        // they can be safely removed from the tile library
+        var releasedTiles = Set<Tile>()
+        
+        for frameNumber in 0 ..< frames.count {
+                        
+            let previousScreen = (frameNumber == 0) ? Screen.blank : frames[frameNumber-1]
+            let currentScreen = frames[frameNumber]
+                        
+            // Store the pending writes in dictionaries, to prevent duplicates
+            // and ensure that only the last written value is used.
+            var tileMapWrites = [TileMapPosition : UInt8]()
+            var tileLibraryWrites = [UInt8 : Tile]()
             
-            let positionsByOldIndex = {
-                var positionsByOldIndex = IndexPositions()
-                for position in positions {
-                    let oldIndex = tileMap[position]
-                    positionsByOldIndex.add(key: oldIndex, position: position)
-                }
-                return positionsByOldIndex
-            }()
+            // Create a list of tiles that are released after this screen
+            var upcomingReleases = [Tile]()
             
-            // Iterate through the tiles, sorted by what value their
-            // positions currently hold in the tile map
-            for (oldIndex, insidePositions) in positionsByOldIndex {
-                let oldTile = tileLibrary[oldIndex]
+            // Consider each tile that will appear on screen, and their positions
+            for (tile, positions) in currentScreen.tilePositions {
+                // Sort the positions that will display this tile
+                // by what tile library index they currently have.
                 
-                // If the tile index already points to the needed tile,
-                // continue.
-                if oldTile == tile {
-                    continue
-                }
-                
-                // Find the mapping of existing tile map values visible on screen, sorted
-                // by index
-                let tileMapIndexPositions = tileMap.indexPositionsOnScreen(xOffset: currentScreen.xOffset, yOffset: currentScreen.yOffset)
-                
-                // It is more efficient to change the tile library entry for this index than
-                // to change the values in the tile map if:
-                // The number of positions in the drawing area using this tile index is greater than
-                // the number of positions on screen, outside of the drawing area, using the same
-                // tile pattern in both this screen and the previous.
-                let outsidePositions: Set<TileMapPosition> = {
-                    tileMapIndexPositions[oldIndex]?.subtracting(insidePositions)
-                        .filter({
-                            // Filter to keep only positions that show
-                            // this tile in both the previous and current
-                            // frame.
-                            currentScreen.tilePositions[oldTile]?.contains($0) ?? false
-                        }) ?? Set<TileMapPosition>()
+                let positionsByOldIndex = {
+                    var positionsByOldIndex = IndexPositions()
+                    for position in positions {
+                        let oldIndex = tileMap[position]
+                        positionsByOldIndex.add(key: oldIndex, position: position)
+                    }
+                    return positionsByOldIndex
                 }()
                 
-                // See if it requires fewer moves to update the tile map
-                // or the tile library.
-                // TODO: Update to be based on total CPU cycles or file size
-                let updateLibrary = insidePositions.count > outsidePositions.count
-                
-                if (updateLibrary) {
-                    // See how many writes are needed for writing without swapping
-                    // a value in the tile library
-                    var (standardTileMapWrites, standardTileLibraryWrites, standardReleasedTile) = writesToDraw(tile: tile, drawPositions: insidePositions, library: tileLibrary, tileMap: tileMap, screen: currentScreen, released: releasedTiles)
+                // Iterate through the tiles, sorted by what value their
+                // positions currently hold in the tile map
+                for (oldIndex, insidePositions) in positionsByOldIndex {
+                    let oldTile = tileLibrary[oldIndex]
                     
-                    // TODO: FIX ABOVE.
-                    // Returns tile map writes that are for the data already in the map
-                    // Returns a released value
-                    
-                    // If the standard approach found the same move as the swap by the space's
-                    // availability as a releasable tile, it will have returned unneeded tile map
-                    // writes which can be filtered out
-                    standardTileMapWrites = standardTileMapWrites.filter { (position, index) in
-                        return tileMap[position] != index
+                    // If the tile index already points to the needed tile,
+                    // continue.
+                    if oldTile == tile {
+                        continue
                     }
                     
-                    // Create a copy of the library, changing the library value
-                    // for this index to see how many writes would be needed
-                    // to update the screen.
-                    var swapLibrary = tileLibrary
-                    swapLibrary[oldIndex] = tile
+                    // Find the mapping of existing tile map values visible on screen, sorted
+                    // by index
+                    let tileMapIndexPositions = tileMap.indexPositionsOnScreen(xOffset: currentScreen.xOffset, yOffset: currentScreen.yOffset)
                     
-                    // If the swap removed the last instance of a tile that is in the release pool,
-                    // make the calculation with that tile removed from the pool
-                    let swapReleased = swapLibrary.indicesForTile[oldTile] == nil ? releasedTiles.subtracting([oldTile]) : releasedTiles
+                    // It is more efficient to change the tile library entry for this index than
+                    // to change the values in the tile map if:
+                    // The number of positions in the drawing area using this tile index is greater than
+                    // the number of positions on screen, outside of the drawing area, using the same
+                    // tile pattern in both this screen and the previous.
+                    let outsidePositions: Set<TileMapPosition> = {
+                        tileMapIndexPositions[oldIndex]?.subtracting(insidePositions)
+                            .filter({
+                                // Filter to keep only positions that show
+                                // this tile in both the previous and current
+                                // frame.
+                                currentScreen.tilePositions[oldTile]?.contains($0) ?? false
+                            }) ?? Set<TileMapPosition>()
+                    }()
                     
-                    let (swapTileMapWrites, swapTileLibraryWrites, swapReleasedTile) = writesToDraw(tile: oldTile, drawPositions: outsidePositions, library: swapLibrary, tileMap: tileMap, screen: currentScreen, released: swapReleased)
-
-                    // Find the number of writes needed for the two algorithms
-                    let standardWrites = standardTileMapWrites.count + standardTileLibraryWrites.count
-                    let swapWrites = swapTileMapWrites.count + swapTileLibraryWrites.count + 1
+                    // See if it requires fewer moves to update the tile map
+                    // or the tile library.
+                    // TODO: Update to be based on total CPU cycles or file size
+                    let updateLibrary = insidePositions.count > outsidePositions.count
                     
-                    // Do the final update based on which path requires fewer writes
-                    if swapWrites < standardWrites {
-                        // Swap
-                        // See if the old tile removed in the swap needs to be removed from the library
-                        //let swappedTile = tileLibrary[oldIndex]
-                        tileLibrary[oldIndex] = tile
-                        tileLibraryWrites[oldIndex] = tile
-                        // See if the tile that was removed was in the release pool,
-                        // and if it was the last instance of that tile, remove the
-                        // tile from the pool.
-                        if releasedTiles.contains(oldTile) {
-                            if tileLibrary.indicesForTile[oldTile] == nil {
-                                releasedTiles.remove(oldTile)
-                            }
+                    if (updateLibrary) {
+                        // See how many writes are needed for writing without swapping
+                        // a value in the tile library
+                        var (standardTileMapWrites, standardTileLibraryWrites, standardReleasedTile) = writesToDraw(tile: tile, drawPositions: insidePositions, library: tileLibrary, tileMap: tileMap, screen: currentScreen, released: releasedTiles)
+                        
+                        // TODO: FIX ABOVE.
+                        // Returns tile map writes that are for the data already in the map
+                        // Returns a released value
+                        
+                        // If the standard approach found the same move as the swap by the space's
+                        // availability as a releasable tile, it will have returned unneeded tile map
+                        // writes which can be filtered out
+                        standardTileMapWrites = standardTileMapWrites.filter { (position, index) in
+                            return tileMap[position] != index
                         }
                         
-                        tileMapWrites.merge(swapTileMapWrites, uniquingKeysWith: replaceMerge)
-                        tileLibraryWrites.merge(swapTileLibraryWrites, uniquingKeysWith: replaceMerge)
-                        applyUpdates(mapWrites: swapTileMapWrites, libraryWrites: swapTileLibraryWrites, releasedTile: swapReleasedTile, tileMap: &tileMap, tileLibrary: &tileLibrary, released: &releasedTiles)
-                    } else {
-                        tileMapWrites.merge(standardTileMapWrites, uniquingKeysWith: replaceMerge)
-                        tileLibraryWrites.merge(standardTileLibraryWrites, uniquingKeysWith: replaceMerge)
-                        applyUpdates(mapWrites: standardTileMapWrites, libraryWrites: standardTileLibraryWrites, releasedTile: standardReleasedTile, tileMap: &tileMap, tileLibrary: &tileLibrary, released: &releasedTiles)
-                    }
-                                            
+                        // Create a copy of the library, changing the library value
+                        // for this index to see how many writes would be needed
+                        // to update the screen.
+                        var swapLibrary = tileLibrary
+                        swapLibrary[oldIndex] = tile
+                        
+                        // If the swap removed the last instance of a tile that is in the release pool,
+                        // make the calculation with that tile removed from the pool
+                        let swapReleased = swapLibrary.indicesForTile[oldTile] == nil ? releasedTiles.subtracting([oldTile]) : releasedTiles
+                        
+                        let (swapTileMapWrites, swapTileLibraryWrites, swapReleasedTile) = writesToDraw(tile: oldTile, drawPositions: outsidePositions, library: swapLibrary, tileMap: tileMap, screen: currentScreen, released: swapReleased)
 
+                        // Find the number of writes needed for the two algorithms
+                        let standardWrites = standardTileMapWrites.count + standardTileLibraryWrites.count
+                        let swapWrites = swapTileMapWrites.count + swapTileLibraryWrites.count + 1
+                        
+                        // Do the final update based on which path requires fewer writes
+                        if swapWrites < standardWrites {
+                            // Swap
+                            // See if the old tile removed in the swap needs to be removed from the library
+                            //let swappedTile = tileLibrary[oldIndex]
+                            tileLibrary[oldIndex] = tile
+                            tileLibraryWrites[oldIndex] = tile
+                            // See if the tile that was removed was in the release pool,
+                            // and if it was the last instance of that tile, remove the
+                            // tile from the pool.
+                            if releasedTiles.contains(oldTile) {
+                                if tileLibrary.indicesForTile[oldTile] == nil {
+                                    releasedTiles.remove(oldTile)
+                                }
+                            }
+                            
+                            tileMapWrites.merge(swapTileMapWrites, uniquingKeysWith: replaceMerge)
+                            tileLibraryWrites.merge(swapTileLibraryWrites, uniquingKeysWith: replaceMerge)
+                            applyUpdates(mapWrites: swapTileMapWrites, libraryWrites: swapTileLibraryWrites, releasedTile: swapReleasedTile, tileMap: &tileMap, tileLibrary: &tileLibrary, released: &releasedTiles)
+                        } else {
+                            tileMapWrites.merge(standardTileMapWrites, uniquingKeysWith: replaceMerge)
+                            tileLibraryWrites.merge(standardTileLibraryWrites, uniquingKeysWith: replaceMerge)
+                            applyUpdates(mapWrites: standardTileMapWrites, libraryWrites: standardTileLibraryWrites, releasedTile: standardReleasedTile, tileMap: &tileMap, tileLibrary: &tileLibrary, released: &releasedTiles)
+                        }
+                                                
+
+                    } else {
+                        // Add the update events to the array
+                        let (newTileMapWrites, newTileLibraryWrites, newReleasedTile) = writesToDraw(tile: tile, drawPositions: insidePositions, library: tileLibrary, tileMap: tileMap, screen: currentScreen, released: releasedTiles)
+                        tileMapWrites.merge(newTileMapWrites, uniquingKeysWith: replaceMerge)
+                        tileLibraryWrites.merge(newTileLibraryWrites, uniquingKeysWith: replaceMerge)
+                        applyUpdates(mapWrites: newTileMapWrites, libraryWrites: newTileLibraryWrites, releasedTile: newReleasedTile, tileMap: &tileMap, tileLibrary: &tileLibrary, released: &releasedTiles)
+                    }
+                }
+                
+                if tileAppearances[tile]!.last! == frameNumber {
+                    upcomingReleases.append(tile)
+                    // Remove the tile from tileAppearances so there are
+                    // fewer to search through in the future
+                    tileAppearances.removeValue(forKey: tile)
                 } else {
-                    // Add the update events to the array
-                    let (newTileMapWrites, newTileLibraryWrites, newReleasedTile) = writesToDraw(tile: tile, drawPositions: insidePositions, library: tileLibrary, tileMap: tileMap, screen: currentScreen, released: releasedTiles)
-                    tileMapWrites.merge(newTileMapWrites, uniquingKeysWith: replaceMerge)
-                    tileLibraryWrites.merge(newTileLibraryWrites, uniquingKeysWith: replaceMerge)
-                    applyUpdates(mapWrites: newTileMapWrites, libraryWrites: newTileLibraryWrites, releasedTile: newReleasedTile, tileMap: &tileMap, tileLibrary: &tileLibrary, released: &releasedTiles)
+                    tileAppearances[tile]!.remove(at: 0)
+                }
+                
+                // Write any changes to the tile map and tile library for the
+                // next iteration.
+                for write in tileMapWrites {
+                    tileMap[write.key] = write.value
+                }
+                for write in tileLibraryWrites {
+                    tileLibrary[write.key] = write.value
                 }
             }
             
-            if tileAppearances[tile]!.last! == frameNumber {
-                upcomingReleases.append(tile)
-                // Remove the tile from tileAppearances so there are
-                // fewer to search through in the future
-                tileAppearances.removeValue(forKey: tile)
+            // Update the releasedTiles set with tiles last used in this frame
+            for release in upcomingReleases {
+                releasedTiles.insert(release)
+            }
+            
+            // If there are no updates, insert nil into the updates array.
+            // Otherwise, format the screen update and insert it to the array.
+            if (currentScreen.xOffset == previousScreen.xOffset &&
+                currentScreen.yOffset == previousScreen.yOffset &&
+                tileMapWrites.isEmpty && tileLibraryWrites.isEmpty) {
+                screenUpdates.append(nil)
             } else {
-                tileAppearances[tile]!.remove(at: 0)
+                let screenUpdate = ScreenUpdate(xOffset: currentScreen.xOffset, yOffset: currentScreen.yOffset, tileMapWrites: tileMapWrites, tileLibraryWrites: tileLibraryWrites)
+                screenUpdates.append(screenUpdate)
             }
-            
-            // Write any changes to the tile map and tile library for the
-            // next iteration.
-            for write in tileMapWrites {
-                tileMap[write.key] = write.value
+        }
+                
+        // Write the updates into the dat file format.
+        var outputData = Data()
+        
+        var delayCount: UInt16 = 0
+        
+        for update in screenUpdates {
+            if let update {
+                // Write any pending delays
+                if delayCount > 0 {
+                    outputData.appendUInt16(0xBABE)
+                    outputData.appendUInt16(delayCount)
+                }
+                delayCount = 0
+                // Write the x and y offsets
+                outputData.appendUInt16(update.xOffset)
+                outputData.appendUInt16(update.yOffset)
+                
+                // Write the respective update counts
+                outputData.appendUInt16(UInt16(update.tileLibraryWrites.count))
+                outputData.appendUInt16(UInt16(update.tileMapWrites.count))
+                
+                // Write the library updates. Each update takes 16 bytes of space
+                let orderedLibraryUpdates = update.tileLibraryWrites.sorted { first, second in
+                    return first.key < second.key
+                }
+                for libUpdate in orderedLibraryUpdates {
+                    // The UInt8 index number is written as a UInt32 value
+                    // in little endian format to preserve alignment
+                    outputData.append(contentsOf: [libUpdate.key, 0, 0, 0])
+                    outputData.append(contentsOf: libUpdate.value.pixels)
+                }
+                
+                // Write the tilemap updates.
+                let orderedTileMapUpdates = update.tileMapWrites.sorted { first, second in
+                    return first.key < second.key
+                }
+                for tileMapUpdate in orderedTileMapUpdates {
+                    // Write the coordinates for the tile, followed by the library index and 0
+                    outputData.append(contentsOf: [tileMapUpdate.key.row, tileMapUpdate.key.col, tileMapUpdate.value, 0])
+                }
+            } else {
+                delayCount += 1
             }
-            for write in tileLibraryWrites {
-                tileLibrary[write.key] = write.value
-            }
+        }
+        // Write any delays from the end of the video
+        if delayCount > 0 {
+            outputData.appendUInt16(0xBABE)
+            outputData.appendUInt16(delayCount)
         }
         
-        // Update the releasedTiles set with tiles last used in this frame
-        for release in upcomingReleases {
-            releasedTiles.insert(release)
-        }
+        // Finish off the file with 0xBEEF 0xCAFE
+        outputData.appendUInt16(0xBEEF)
+        outputData.appendUInt16(0xCAFE)
         
-        // If there are no updates, insert nil into the updates array.
-        // Otherwise, format the screen update and insert it to the array.
-        if (currentScreen.xOffset == previousScreen.xOffset &&
-            currentScreen.yOffset == previousScreen.yOffset &&
-            tileMapWrites.isEmpty && tileLibraryWrites.isEmpty) {
-            screenUpdates.append(nil)
-        } else {
-            let screenUpdate = ScreenUpdate(xOffset: currentScreen.xOffset, yOffset: currentScreen.yOffset, tileMapWrites: tileMapWrites, tileLibraryWrites: tileLibraryWrites)
-            screenUpdates.append(screenUpdate)
-        }
+        // Save the encoded data to the cache
+        _synthVid = outputData
+        
+        // Write the data to file
+        return outputData
+    }()
+    
+    /// Re-encode the synthvid data.
+    /// This would be useful for loading a synthvid file from disk and processing the video
+    /// with an updated encoder.
+    public func encodeSynthvid() {
+        // Delete the cached version in memory
+        _synthVid = nil
+        // Process the encoding, which saves to the cache automatically.
+        _ = synthvid
+        
     }
-            
-    // Write the updates into the dat file format.
-    var outputData = Data()
-    
-    var delayCount: UInt16 = 0
-    
-    for update in screenUpdates {
-        if let update {
-            // Write any pending delays
-            if delayCount > 0 {
-                outputData.appendUInt16(0xBABE)
-                outputData.appendUInt16(delayCount)
-            }
-            delayCount = 0
-            // Write the x and y offsets
-            outputData.appendUInt16(update.xOffset)
-            outputData.appendUInt16(update.yOffset)
-            
-            // Write the respective update counts
-            outputData.appendUInt16(UInt16(update.tileLibraryWrites.count))
-            outputData.appendUInt16(UInt16(update.tileMapWrites.count))
-            
-            // Write the library updates. Each update takes 16 bytes of space
-            let orderedLibraryUpdates = update.tileLibraryWrites.sorted { first, second in
-                return first.key < second.key
-            }
-            for libUpdate in orderedLibraryUpdates {
-                // The UInt8 index number is written as a UInt32 value
-                // in little endian format to preserve alignment
-                outputData.append(contentsOf: [libUpdate.key, 0, 0, 0])
-                outputData.append(contentsOf: libUpdate.value.pixels)
-            }
-            
-            // Write the tilemap updates.
-            let orderedTileMapUpdates = update.tileMapWrites.sorted { first, second in
-                return first.key < second.key
-            }
-            for tileMapUpdate in orderedTileMapUpdates {
-                // Write the coordinates for the tile, followed by the library index and 0
-                outputData.append(contentsOf: [tileMapUpdate.key.row, tileMapUpdate.key.col, tileMapUpdate.value, 0])
-            }
-        } else {
-            delayCount += 1
-        }
-    }
-    // Write any delays from the end of the video
-    if delayCount > 0 {
-        outputData.appendUInt16(0xBABE)
-        outputData.appendUInt16(delayCount)
-    }
-    
-    // Finish off the file with 0xBEEF 0xCAFE
-    outputData.appendUInt16(0xBEEF)
-    outputData.appendUInt16(0xCAFE)
-    
-    // Write the data to file
-    return outputData
-}()
 
     /// Return a dictionary that maps each tile that appears in the video to its appearances.
     /// This allows the optimization stage of exporting to .dat to free references to a tile once
