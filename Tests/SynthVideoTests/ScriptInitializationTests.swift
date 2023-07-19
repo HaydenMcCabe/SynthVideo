@@ -26,7 +26,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.unknownCommand = error else {
+            guard case SynthVideoScriptError.unknownCommand = error else {
                 XCTFail("Returned error should be .unknownCommand")
                 return
             }
@@ -90,7 +90,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.badArguments = error else {
+            guard case SynthVideoScriptError.badArguments = error else {
                 XCTFail("Returned error should be .badArguments")
                 return
             }
@@ -140,7 +140,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.badArguments = error else {
+            guard case SynthVideoScriptError.badArguments = error else {
                 XCTFail("Returned error should be .badArguments")
                 return
             }
@@ -175,7 +175,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.unableToLoadImage = error else {
+            guard case SynthVideoScriptError.unableToLoadImage = error else {
                 XCTFail("Returned error should be .unableToLoadImage")
                 return
             }
@@ -190,7 +190,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.unableToLoadImage = error else {
+            guard case SynthVideoScriptError.unableToLoadImage = error else {
                 XCTFail("Returned error should be .unableToLoadImage")
                 return
             }
@@ -205,7 +205,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.incorrectImageDimensions = error else {
+            guard case SynthVideoScriptError.incorrectImageDimensions = error else {
                 XCTFail("Returned error should be .incorrectImageDimensions")
                 return
             }
@@ -220,7 +220,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.incorrectImageDimensions = error else {
+            guard case SynthVideoScriptError.incorrectImageDimensions = error else {
                 XCTFail("Returned error should be .incorrectImageDimensions")
                 return
             }
@@ -236,7 +236,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.imageTooComplex = error else {
+            guard case SynthVideoScriptError.imageTooComplex = error else {
                 XCTFail("Returned error should be .imageTooComplex")
                 return
             }
@@ -266,9 +266,8 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.badArguments(let command, _) = error,
-            command == "offset"  else {
-                XCTFail("Returned error should be .badArguments(offset,_)")
+            guard case SynthVideoScriptError.badArguments = error else {
+                XCTFail("Returned error should be .badArguments")
                 return
             }
         }
@@ -312,7 +311,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.invalidDelayValue = error else {
+            guard case SynthVideoScriptError.invalidDelayValue = error else {
                 XCTFail("Returned error should be .invalidDelayValue(offset,_)")
                 return
             }
@@ -325,7 +324,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.invalidDelayValue = error else {
+            guard case SynthVideoScriptError.invalidDelayValue = error else {
                 XCTFail("Returned error should be .invalidDelayValue")
                 return
             }
@@ -338,7 +337,7 @@ final class ScriptInitializationTests: XCTestCase {
             return
         }
         XCTAssertThrowsError(try SynthVideo(script: scriptURL)) { error in
-            guard case SynthVideoError.badArguments = error else {
+            guard case SynthVideoScriptError.badArguments = error else {
                 XCTFail("Returned error should be .badArguments")
                 return
             }

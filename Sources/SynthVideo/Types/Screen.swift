@@ -48,7 +48,7 @@ public class Screen: Hashable, Equatable {
             var positions = Set<TileMapPosition>()
             for row: UInt8 in 0...24 {
                 for col: UInt8 in 0...49 {
-                    positions.insert(TileMapPosition(row: row, col: col))
+                    positions.insert(try! TileMapPosition(row: row, col: col))
                 }
             }
             return positions
@@ -69,7 +69,7 @@ public class Screen: Hashable, Equatable {
                 let rowMod = UInt8(row % vramTileRows)
                 let colMod = UInt8(col % vramTileColumns)
                 
-                positions.insert(TileMapPosition(row: rowMod, col: colMod))
+                positions.insert(try! TileMapPosition(row: rowMod, col: colMod))
             }
         }
 

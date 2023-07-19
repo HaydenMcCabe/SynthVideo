@@ -21,19 +21,22 @@ public struct TileMap {
             values[Int(position.row)][Int(position.col)]
         }
         set(newValue) {
-            setValue(value: newValue, row: position.row, col: position.col)
+            try! setValue(value: newValue, row: position.row, col: position.col)
         }
     }
+    
     func value(row: UInt8, col: UInt8) -> UInt8 {
         values[Int(row)][Int(col)]
     }
-    mutating func setValue(value: UInt8, row: UInt8, col: UInt8) {
+    
+    mutating func setValue(value: UInt8, row: UInt8, col: UInt8) throws {
+        let position = try TileMapPosition(row: row, col: col)
         // The old index should no longer contain this position
         let oldIndex = values[Int(row)][Int(col)]
-        positionsByIndex[Int(oldIndex)].remove(TileMapPosition(row: row, col: col))
+        positionsByIndex[Int(oldIndex)].remove(position)
         
         // Update the new index to say it now contains this position
-        positionsByIndex[Int(value)].insert(TileMapPosition(row: row, col: col))
+        positionsByIndex[Int(value)].insert(position)
         
         // Write the change
         values[Int(row)][Int(col)] = value
@@ -50,7 +53,7 @@ public struct TileMap {
         var allPositions = Set<TileMapPosition>()
         for row: UInt8 in 0 ..< UInt8(vramTileRows) {
             for col: UInt8 in 0 ..< UInt8(vramTileColumns) {
-                allPositions.insert(TileMapPosition(row: row, col: col))
+                allPositions.insert(try! TileMapPosition(row: row, col: col))
             }
         }
         positionArray.append(allPositions)
@@ -65,7 +68,7 @@ public struct TileMap {
         return positionsByIndex[Int(index)]
     }
     
-    // Return postions visible on screen with the given offset, sorted by index
+    // Return positions visible on screen with the given offset, sorted by index
     func indexPositionsOnScreen(xOffset: UInt16, yOffset: UInt16) -> IndexPositions {
         // Fetch the positions for the given offset
         let positions = TileMap.positions(xOffset: xOffset, yOffset: yOffset)
@@ -73,14 +76,6 @@ public struct TileMap {
         // Create an instance to hold our results
         var indexPositions = IndexPositions()
         
-//        for row in startRow...endRow {
-//            for col in startCol...endCol {
-//                let rowMod = UInt8(row % vramTileRows)
-//                let colMod = UInt8(col % vramTileColumns)
-//                let index = value(row: rowMod, col: colMod)
-//                indexPositions.add(key: index, position: TileMapPosition(row: rowMod, col: colMod))
-//            }
-//        }
         for position in positions {
             let index = self[position]
             indexPositions.add(key: index, position: position)
@@ -102,7 +97,7 @@ public struct TileMap {
                 let rowMod = UInt8(row % vramTileRows)
                 let colMod = UInt8(col % vramTileColumns)
                 
-                positions.insert(TileMapPosition(row: rowMod, col: colMod))
+                positions.insert(try! TileMapPosition(row: rowMod, col: colMod))
             }
         }
 

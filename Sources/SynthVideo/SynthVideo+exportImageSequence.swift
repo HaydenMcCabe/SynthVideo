@@ -13,13 +13,9 @@ extension SynthVideo {
     public func exportImageSequence(outputFolder: URL, baseFilename: String, colors: [CGColor] = [CGColor(red: 1, green: 1, blue: 1, alpha: 1)]) throws {
         // Verify that the given URL is a folder
         guard (try! outputFolder.resourceValues(forKeys: [.isDirectoryKey])).isDirectory ?? false else {
-            throw SynthVideoError.fileNotFound(filename: outputFolder.absoluteString, lineNumber: 0)
+            throw SynthVideoError.notDirectory
         }
-        
-        guard !colors.isEmpty else {
-            throw SynthVideoError.graphicConversionError
-        }
-        
+
         // The CGContext is used to color the frame
         let cgContext = CGContext(data: nil,
                                   width: 400,
@@ -63,7 +59,7 @@ extension SynthVideo {
                 cgContext.flush()
                 
                 guard let cgImage = cgContext.makeImage() else {
-                    throw SynthVideoError.graphicConversionError
+                    throw SynthVideoError.graphicsConversionError
                 }
                 
                 let ciImage = CIImage(cgImage: cgImage)
@@ -76,7 +72,7 @@ extension SynthVideo {
                     }
                     
                 } else {
-                    throw SynthVideoError.graphicConversionError
+                    throw SynthVideoError.graphicsConversionError
                 }
             }
             

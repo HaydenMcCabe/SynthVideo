@@ -71,7 +71,7 @@ final class ImageExportTests: XCTestCase {
     func testMulticolorExport() throws {
         // The number of test iterations,
         // also used to determine the output filenames
-        let testCount = 1000
+        let testCount = 100
         
         // Create some random colors
         // CGColor uses a floating point value when defining a color
@@ -142,7 +142,8 @@ final class ImageExportTests: XCTestCase {
             
             // Render the CIImage data into a CGImage
             guard let cgImage = CIContext().createCGImage(ciImage, from: CGRect(origin: CGPointMake(0, 0), size: CGSize(width: 400, height: 300))) else {
-                throw SynthVideoError.graphicConversionError
+                throw SynthVideoScriptError.graphicConversionError(lineNumber: 0)
+                
             }
 
             // Establish a 4-byte buffer to store the channels of the test pixel

@@ -8,105 +8,82 @@
 import Foundation
 
 public enum SynthVideoError : Error, CaseIterable {
-    
-    
     // File errors
-    case fileNotFound(filename: String, lineNumber: Int)
+    case fileNotFound
     case fileCorruption
-    
     case permissionError
     
     // File export
     case outputFileUnavailable
     case invalidRange
     case notDirectory
+    case unsupportedCodec
     
-    case invalidDelayValue
+    // OS issues
     case videoInitializationError
+    case graphicsConversionError
     
     // Native data types
     case invalidTileSize
     case invalidPosition
     case invalidPixelRow
+    case invalidPixelColumn
     
     // Empty video when initializing from an empty script
     case emptyVideo
     
-    // Script initialization errors
-    case missingGraphicFile
-    case incorrectImageDimensions
-    case unknownCommand(lineNumber: Int)
-    case badArguments(command: String, lineNumber: Int)
-    case unableToLoadImage (fileName: String, lineNumber: Int)
-    case graphicConversionError
-    case imageTooComplex
-    case unsupportedCodec
-    
-    // Frame function
+    // Frame
     case invalidFrameNumber
+}
+
+public enum SynthVideoScriptError : Error {
+    case missingGraphicFile(lineNumber: Int)
+    case incorrectImageDimensions(lineNumber: Int)
+    case unknownCommand(lineNumber: Int)
+    case badArguments(lineNumber: Int)
+    case unableToLoadImage (lineNumber: Int)
+    case graphicConversionError(lineNumber: Int)
+    case imageTooComplex(lineNumber: Int)
+    case invalidDelayValue(lineNumber: Int)
     
-    public static var allCases: [SynthVideoError] = [
-        .fileNotFound(filename: "test", lineNumber: 1),
-        .fileCorruption, .permissionError,
-        .outputFileUnavailable, .invalidRange, .notDirectory,
-        .invalidDelayValue, .videoInitializationError,
-        .invalidTileSize, .invalidPosition, .invalidPixelRow,
-        .emptyVideo,
-        .missingGraphicFile,
-        .incorrectImageDimensions,
-        .unknownCommand(lineNumber: 1),
-        .badArguments(command: "test", lineNumber: 1),
-        .unableToLoadImage(fileName: "test", lineNumber: 1),
-        .graphicConversionError,
-        .imageTooComplex,
-        .unsupportedCodec,
-        .invalidFrameNumber   
-    ]
 }
 
 extension SynthVideoError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .fileNotFound(let filename, let lineNumber):
-            return "File not found on line \(lineNumber): \(filename)"
+        case .fileNotFound:
+            return "File not found"
         case .fileCorruption:
-            return "File corruption."
+            return "File corruption"
         case .permissionError:
-            return "Permission error. Unable to read file."
+            return "User does not have sufficient permissions for file operation"
+            
         case .outputFileUnavailable:
             return "Output file unavailable"
         case .invalidRange:
             return "Invalid range selection"
         case .notDirectory:
             return "Given URL is not a directory"
-        case .invalidDelayValue:
-            return "Invalid delay value. Delay must be greater than 0, and in the 16-bit unsigned range."
+        case .unsupportedCodec:
+            return "Given codec is not supported for video export"
+            
         case .videoInitializationError:
-            return "Unable to initialize Apple provided video frameworks."
+            return "Unable to initialize Apple provided video frameworks"
+        case .graphicsConversionError:
+            return "Unable to initialize Apple provided graphics frameworks"
+            
         case .invalidTileSize:
-            return "Invalid tile size. Size must be 8 x 12."
+            return "Invalid tile size. Size must be 8 x 12"
         case .invalidPosition:
             return "Invalid position"
         case .invalidPixelRow:
             return "Invalid pixel row"
+        case .invalidPixelColumn:
+            return "Invalid pixel column"
+            
         case .emptyVideo:
             return "Resulting video has no frames"
-        case .missingGraphicFile:
-            return "Unable to find graphics file"
-        case .incorrectImageDimensions:
-            return "Incorrect image dimensions. Image must be nx400 x mx300."
-        case .unknownCommand(let lineNumber):
-            return "Unknown command on line \(lineNumber)"
-        case .badArguments(let command, let lineNumber):
-            return "Invalid arguments for command \(command) on line \(lineNumber)"
-        case .unableToLoadImage(let fileName, let lineNumber):
-            return "Unable to load image \(fileName) on line \(lineNumber)"
-        case .graphicConversionError:
-            return "Unable to process graphic image."
-        case .imageTooComplex:
-            return "Image too complex; More than 256 unique tiles required to display image."
-        case .unsupportedCodec:
-            return "Unsupported Codec."
+            
         case .invalidFrameNumber:
             return "Invalid frame number."
         }

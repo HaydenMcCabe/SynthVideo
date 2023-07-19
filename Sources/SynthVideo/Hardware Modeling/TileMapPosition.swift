@@ -7,18 +7,35 @@
 
 import Foundation
 
-/// A position for a tile in the tilemap.
-///  - row: A row in the range 0...49
-///  - col: A column in the range 0...99
+/// A position for a tile in the tilemap. The row value is in the range 0...49
+/// and the column value is in the range 0...99
 public struct TileMapPosition: Hashable {
     let row: UInt8
     let col: UInt8
+    
+    /// Create a new TileMapPosition
+    ///
+    /// - Parameter row: A row in the range 0...49
+    /// - Parameter col: A column in the range 0...99
+    ///
+    /// - Throws: SynthVideoError.invalidPixelRow when row >= 50
+    /// - Throws: SynthVideoError.invalidPixelColumn when col >= 100
+    init(row: UInt8, col: UInt8) throws {
+        guard row < vramTileRows else {
+            throw SynthVideoError.invalidPixelRow
+        }
+        guard col < vramTileColumns else {
+            throw SynthVideoError.invalidPixelColumn
+        }
+        self.row = row
+        self.col = col
+    }
 }
 
-public typealias TilePositions = [Tile : Set<TileMapPosition>]
-public typealias IndexPositions = [UInt8 : Set<TileMapPosition>]
+internal typealias TilePositions = [Tile : Set<TileMapPosition>]
+internal typealias IndexPositions = [UInt8 : Set<TileMapPosition>]
 
-public extension Dictionary where Value == Set<TileMapPosition> {
+internal extension Dictionary where Value == Set<TileMapPosition> {
     mutating func add(key: Key, position: TileMapPosition) {
         if self[key] != nil {
             self[key]!.insert(position)
@@ -28,10 +45,7 @@ public extension Dictionary where Value == Set<TileMapPosition> {
     }
 }
 
-extension TileMapPosition: Comparable, CustomStringConvertible {
-    public var description: String {
-        return "(\(self.row), \(self.col))"
-    }
+extension TileMapPosition: Comparable {
     
     public static func < (lhs: TileMapPosition, rhs: TileMapPosition) -> Bool {
         if lhs.row < rhs.row {
@@ -45,5 +59,11 @@ extension TileMapPosition: Comparable, CustomStringConvertible {
         } else {
             return false
         }
+    }
+}
+
+extension TileMapPosition: CustomStringConvertible {
+    public var description: String {
+        return "(\(self.row), \(self.col))"
     }
 }
