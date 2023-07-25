@@ -422,10 +422,10 @@ public class SynthVideo {
     
     // MARK: Public properties
     public struct MemoryState {
-        let xOffset: UInt16
-        let yOffset: UInt16
-        let tileMap: Data
-        let tileLibrary: Data
+        public let xOffset: UInt16
+        public let yOffset: UInt16
+        public let tileMap: Data
+        public let tileLibrary: Data
     }
     
     private var _memoryStates: [MemoryState]? = nil
