@@ -5,4 +5,4 @@
 # activated.
 ActiveWhite
 ActiveBlack
-load:BlackScreen.png:0:0
+load:blackscreen.png:0:0

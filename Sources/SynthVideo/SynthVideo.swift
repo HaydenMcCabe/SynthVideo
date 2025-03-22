@@ -19,6 +19,8 @@ public class SynthVideo {
     private let bitmapCache = NSCache<Screen, CGImage>()
     private var _synthVid: Data? = nil
     
+    private var _memoryStates: [MemoryState]? = nil
+    
     // MARK: Initializers
     
     /// Initialize from a file containing .synthvid data
@@ -420,6 +422,13 @@ public class SynthVideo {
         self.frames = frames
     }
     
+    deinit {
+        guard let memoryStates = _memoryStates else {
+            return
+        }
+        
+    }
+    
     // MARK: Public properties
     public struct MemoryState {
         public let xOffset: UInt16
@@ -428,7 +437,7 @@ public class SynthVideo {
         public let tileLibrary: Data
     }
     
-    private var _memoryStates: [MemoryState]? = nil
+    
     lazy public var memoryStates: [MemoryState] = {
         if let _memoryStates {
             return _memoryStates
@@ -512,7 +521,7 @@ public class SynthVideo {
                     
                     romIndex += 4
                                         
-                    for _ in 0..<lib_update_count {
+                    for _ in 0 ..< lib_update_count {
                         // The index in the 32-bit pointer is half of that
                         // in the 16-bit pointer. The 16-bit value should
                         // be even, due to the alignment of the data format.
@@ -527,10 +536,14 @@ public class SynthVideo {
                         // allocated memory for a 32-bit pointer
                         let libraryIndex32 = Int(libraryIndex * 3)
                         
+                        let bitWord1 = romPtr32[romIndex32 + 1]
+                        let bitWord2 = romPtr32[romIndex32 + 2]
+                        let bitWord3 = romPtr32[romIndex32 + 3]
+                        
                         // Copy the values as 32-bit words
-                        tileLibraryRam[libraryIndex32] = romPtr32[romIndex32 + 1]
-                        tileLibraryRam[libraryIndex32 + 1] = romPtr32[romIndex32 + 2]
-                        tileLibraryRam[libraryIndex32 + 2] = romPtr32[romIndex32 + 3]
+                        tileLibraryRam[libraryIndex32] = bitWord1
+                        tileLibraryRam[libraryIndex32 + 1] = bitWord2
+                        tileLibraryRam[libraryIndex32 + 2] = bitWord3
                         
                         // Advance the index for 8 16-bit values after reading 4 32-bit values
                         romIndex += 8
@@ -569,6 +582,7 @@ public class SynthVideo {
             
         }
                 
+        _memoryStates = memoryStates
         return memoryStates
     }()
     
